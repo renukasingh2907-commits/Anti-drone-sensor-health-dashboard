@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Anti-Drone Sensor Health Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ================================================= -->
+    <!-- NAVIGATION BAR -->
+    <!-- ================================================= -->
+
+    <nav class="navbar">
+
+        <div class="nav-title">
+            Anti-Drone Dashboard
+        </div>
+
+        <div class="nav-links">
+
+            <a href="#">
+                Dashboard
+            </a>
+
+            <a href="#sensorMonitoring">
+                Sensors
+            </a>
+
+            <button
+                class="wifi-button"
+                onclick="openWifiPanel()"
+                title="ESP32 Wi-Fi Connection"
+            >
+                📶 Wi-Fi
+            </button>
+
+        </div>
+
+    </nav>
+
+
+    <!-- ================================================= -->
+    <!-- WIFI / ESP32 CONNECTION POPUP -->
+    <!-- ================================================= -->
+
+    <div id="wifiPanel" class="wifi-panel">
+
+        <div class="wifi-box">
+
+            <button
+                class="close-button"
+                onclick="closeWifiPanel()"
+            >
+                ×
+            </button>
+
+            <h2>
+                📶 ESP32 Wi-Fi Connection
+            </h2>
+
+            <p>
+                Connect your laptop and ESP32 to the same
+                Wi-Fi network.
+            </p>
+
+            <label for="esp32IP">
+                ESP32 IP Address
+            </label>
+
+            <input
+                type="text"
+                id="esp32IP"
+                placeholder="Example: 192.168.1.105"
+            >
+
+            <button onclick="connectESP32()">
+                Connect ESP32
+            </button>
+
+            <p>
+                Connection Status:
+
+                <strong id="wifiStatus">
+                    NOT CONNECTED
+                </strong>
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- HEADER -->
+    <!-- ================================================= -->
+
+    <header>
+
+        <h1>
+            Anti-Drone Sensor Health Dashboard
+        </h1>
+
+        <p>
+            Environmental Compensation |
+            Sensor Health |
+            Pointing Accuracy
+        </p>
+
+    </header>
+
+
+    <main>
+
+
+        <!-- ================================================= -->
+        <!-- 1. ENVIRONMENTAL CONDITION -->
+        <!-- ================================================= -->
+
+        <section class="panel">
+
+            <h2>
+                1. Environmental Condition Overlay
+            </h2>
+
+            <p class="description">
+                Simulate temperature and altitude conditions and observe
+                their effect on sensor drift and compensation.
+            </p>
+
+
+            <div class="controls">
+
+
+                <!-- TEMPERATURE -->
+
+                <div class="control-box">
+
+                    <label>
+
+                        Temperature:
+
+                        <b id="tempValue">
+                            25
+                        </b>
+
+                        °C
+
+                    </label>
+
+
+                    <input
+                        type="range"
+                        id="tempSlider"
+                        min="-20"
+                        max="70"
+                        value="25"
+                    >
+
+                </div>
+
+
+
+                <!-- ALTITUDE -->
+
+                <div class="control-box">
+
+                    <label>
+
+                        Altitude:
+
+                        <b id="altValue">
+                            0
+                        </b>
+
+                        m
+
+                    </label>
+
+
+                    <input
+                        type="range"
+                        id="altSlider"
+                        min="0"
+                        max="10000"
+                        step="100"
+                        value="0"
+                    >
+
+                </div>
+
+
+
+                <!-- SIMULATION -->
+
+                <button id="demoBtn">
+                    Start Simulation
+                </button>
+
+            </div>
+
+
+
+            <!-- ENVIRONMENT CARDS -->
+
+            <div class="cards">
+
+
+                <div class="card">
+
+                    <span>
+                        Environmental Status
+                    </span>
+
+                    <strong id="envStatus">
+                        NORMAL
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Drift Threshold
+                    </span>
+
+                    <strong id="driftThreshold">
+                        5%
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Compensation
+                    </span>
+
+                    <strong id="compStatus">
+                        READY
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+            <canvas id="environmentChart"></canvas>
+
+        </section>
+
+
+
+        <!-- ================================================= -->
+        <!-- 2. BEFORE / AFTER COMPENSATION -->
+        <!-- ================================================= -->
+
+        <section class="panel">
+
+            <h2>
+                2. Before / After Compensation
+            </h2>
+
+
+            <p class="description">
+
+                Comparison between raw sensor data and
+                environmentally compensated sensor data.
+
+            </p>
+
+
+            <canvas id="compChart"></canvas>
+
+
+            <div class="cards">
+
+
+                <div class="card">
+
+                    <span>
+                        Raw Error
+                    </span>
+
+                    <strong id="rawError">
+                        --
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Compensated Error
+                    </span>
+
+                    <strong id="compError">
+                        --
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Error Reduction
+                    </span>
+
+                    <strong id="errorReduction">
+                        --
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ================================================= -->
+        <!-- 3. ANOMALY DETECTION -->
+        <!-- ================================================= -->
+
+        <section class="panel">
+
+            <h2>
+                3. Anomaly / Threshold Flagging
+            </h2>
+
+
+            <p class="description">
+
+                Rule-based monitoring of vibration deviation
+                from the baseline value.
+
+            </p>
+
+
+
+            <div class="threshold-box">
+
+                <label>
+
+                    Vibration Warning Threshold:
+
+                    <input
+                        type="number"
+                        id="vibThreshold"
+                        value="20"
+                        min="1"
+                        max="200"
+                    >
+
+                    %
+
+                </label>
+
+            </div>
+
+
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Component
+                        </th>
+
+                        <th>
+                            Reading
+                        </th>
+
+                        <th>
+                            Baseline
+                        </th>
+
+                        <th>
+                            Deviation
+                        </th>
+
+                        <th>
+                            Status / Flag
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="healthBody">
+
+                </tbody>
+
+            </table>
+
+        </section>
+
+
+
+        <!-- ================================================= -->
+        <!-- 4. ERROR BUDGET -->
+        <!-- ================================================= -->
+
+        <section class="panel">
+
+            <h2>
+                4. Error Budget / Pointing Accuracy
+            </h2>
+
+
+
+            <!-- EXPORT BUTTONS -->
+
+            <div class="export-buttons">
+
+                <button id="exportJSON">
+
+                    Export JSON
+
+                </button>
+
+
+                <button id="exportPDF">
+
+                    Export PDF
+
+                </button>
+
+            </div>
+
+
+
+            <p class="description">
+
+                Simulated pointing error broken into environmental
+                contributors and compensated error.
+
+            </p>
+
+
+
+            <div class="cards">
+
+
+                <div class="card">
+
+                    <span>
+                        Total Pointing Error
+                    </span>
+
+                    <strong id="pointingError">
+                        --
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Wind-Induced Error
+                    </span>
+
+                    <strong id="windError">
+                        --
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Drift-Induced Error
+                    </span>
+
+                    <strong id="driftError">
+                        --
+                    </strong>
+
+                </div>
+
+
+
+                <div class="card">
+
+                    <span>
+                        Compensated Error
+                    </span>
+
+                    <strong id="pointingComp">
+                        --
+                    </strong>
+
+                </div>
+
+
+            </div>
+
+
+            <canvas id="pointingChart"></canvas>
+
+        </section>
+
+
+
+        <!-- ================================================= -->
+        <!-- SENSOR MONITORING -->
+        <!-- ================================================= -->
+
+        <section
+            class="panel"
+            id="sensorMonitoring"
+        >
+
+            <h2>
+                Sensor Monitoring
+            </h2>
+
+
+
+            <div class="upload">
+
+
+                <input
+                    type="file"
+                    id="csvFile"
+                    accept=".csv"
+                >
+
+
+                <button id="loadDemo">
+
+                    Load Demo Sensor Data
+
+                </button>
+
+
+            </div>
+
+
+
+            <!-- MPU6050 ACCELERATION -->
+
+            <h3>
+                MPU6050 Acceleration
+            </h3>
+
+            <canvas id="accelChart"></canvas>
+
+
+
+            <!-- MPU6050 GYROSCOPE -->
+
+            <h3>
+                MPU6050 Gyroscope
+            </h3>
+
+            <canvas id="gyroChart"></canvas>
+
+
+
+            <!-- BME280 TEMPERATURE -->
+
+            <h3>
+                BME280 Temperature
+            </h3>
+
+            <canvas id="tempChart"></canvas>
+
+
+
+            <!-- BME280 PRESSURE -->
+
+            <h3>
+                BME280 Pressure
+            </h3>
+
+            <canvas id="pressureChart"></canvas>
+
+
+
+            <!-- INMP441 -->
+
+            <h3>
+                INMP441 Vibration
+            </h3>
+
+            <canvas id="vibrationChart"></canvas>
+
+
+        </section>
+
+
+    </main>
+
+
+
+    <!-- ================================================= -->
+    <!-- JAVASCRIPT -->
+    <!-- ================================================= -->
+
+    <script src="script.js"></script>
+
+
+</body>
+
+</html>
